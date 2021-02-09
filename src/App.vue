@@ -14,76 +14,105 @@
 
     <!-- using the v-bind or an ordinary colon will make us bind a declared relay with any type of event we want to handle -->
     <!-- <button :disabled="isShow">add new</button> -->
-  <div class="w-100 h-100 position-absolute d-flex align-items-center" style="background: rgba(0,0,0, 0.7); z-index: 1" v-if="isEdit">
-    
-    <div></div>
-    <div class="bg-light w-50 mx-auto p-3 my-auto rounded" id="modal">
-      <form @submit.prevent="addData">
-        <div class="from-group">
-          <label for="name">Name</label>
-          <input class="form-control" v-model="nameE" type="text"/>
+  <div class="w-100 h-100 position-absolute d-flex align-items-center p-3" style="background: rgba(0,0,0, 0.7); z-index: 1" v-if="isEdit">
+      
+    <div class="container">
+      <div class="row">
+        <div class="col-sm-12 col-md-12 col-lg-6 col-xl-6 bg-light w-100 mx-auto p-3 my-auto rounded">
+          <form @submit.prevent="addData">
+              <div class="from-group">
+                <label for="name" class="text-muted">Name</label>
+                <input class="form-control border-top-0 border-right-0 border-info shadow-sm" v-model.trim="nameE" type="text"/>
+              </div>
+              <div class="from-group mt-2">
+                <label for="task" class="text-muted">Description</label>
+                <input class="form-control border-top-0 border-left-0 border-info shadow-sm" v-model.trim="descE" type="text"/>
+              </div>
+              
+              <div class="form-group mt-3 text-center">
+                <button type="submit" class="btn btn-primary shadow-md mt-2">Edit</button>
+              </div>
+            </form>
         </div>
-        <div class="from-group">
-          <label for="task">Task</label>
-          <input class="form-control" v-model="descE" type="text"/>
-        </div>
-        
-        <div class="form-group mt-3">
-          <button class="btn btn-success">Edit</button>
-        </div>
-      </form>
+      </div>
     </div>
-    <div></div>
 
   </div>
 
-  <div class="container">
-    <div class="row">
-      <div></div>
-      
-      <div class="col-8 mx-auto wow slideInRight border p-3">
+  <div class="container-fluid">
+    
+    <div class="row justify-content-center align-items-center p-4">
+      <div class="col-sm-12 col-md-12 col-lg-6 col-xl-6 p-3 mt-5 bg-white shadow border">
+        <div class="text-uppercase mb-4">
+          <span class="rounded bg-white shadow-sm p-2 text-muted">to do application
+            <small class="text-info ml-3">Using Vue js</small>
+          </span>
+        </div>
         <form @submit.prevent="addData">
           <div class="from-group">
-            <label for="name">Name</label>
-            <input class="form-control" v-model="name" type="text"/>
+            <label for="name" class="text-muted">Name</label>
+            <input class="form-control border-top-0 border-right-0 border-info shadow-sm" v-model.trim="name" type="text"/>
           </div>
-          <div class="from-group">
-            <label for="task">Task</label>
-            <input class="form-control" v-model="desc" type="text"/>
+          <div class="from-group mt-2">
+            <label for="task" class="text-muted">Description</label>
+            <input class="form-control border-top-0 border-left-0 border-info shadow-sm" v-model.trim="desc" type="text"/>
           </div>
           
-          <div class="form-group mt-3">
-            <button type="submit" class="btn btn-dark">submit</button>
+          <div class="form-group mt-3 text-center">
+            <button type="submit" class="btn btn-info shadow-md mt-2">Submit</button>
           </div>
         </form>
         
         <div>
-          <h5 class="text-danger text-center">Your tasks' lists</h5>
-          <div class="bg-light text-center mt-3" v-if="dataPerson.length <= 0">
-            <small>You have no do item</small>
+          <div class="mb-4 position-relative">
+            <div class="rounded bg-white shadow-sm p-2 text-muted text-uppercase">Your tasks' lists</div>
+            
+            <div class="position-absolute w-30" style="right: 1.5em; top:0" v-if="isEdited">
+              <div class="alert alert-success p-1">
+                <small>Successfully Edited!</small>
+              </div>
+            </div>
+
+            <div class="position-absolute w-30" style="right: 1.5em; top:0" v-if="isDeleted">
+              <div class="alert alert-success p-1">
+                <small>Successfully Deleted!</small>
+              </div>
+            </div>
+
           </div>
-          <div v-else-if="dataPerson.length > 0">
-            <table class="table table-striped table-hover">
+          <div class="bg-light text-center mt-3 p-2" v-if="dataPerson.length <= 0">
+            <span class="text-muted bg-white shadow shadow-sm p-2 rounded">Currently, you have no todo items</span>
+          </div>
+          <div v-else-if="dataPerson.length > 0" class="table-responsive">
+            <table class="table table-striped table-condensed table-hover text-muted w-100">
               <thead>
                 <tr>
-                  <th></th>
-                  <th>S/n</th>
-                   <th>To-do</th>
-                  <th>Description</th>
-                  <th>Edit/Delete</th>
+                  <th>mDel</th>
+                  <th>To-do</th>
+                  <th>Desc</th>
+                  <th>Options</th>
                 </tr>
               </thead>
               <tbody>
-                <tr v-for="(v, i) of dataPerson" :key="i">
+                <tr v-for="(v, i) of dataPerson" :key="i" class="">
                   <td>
                     <input type="checkbox" style="cursor: pointer"/>
                   </td>
-                  <td> {{ i + 1 }} </td>
                   <td> {{ v.name }} </td>
                   <td> {{ v.desc }} </td>
-                  <td>
-                      <button class="btn btn-sm btn-warning mr-2" @click="edit(i)">Edit</button>
-                      <button class="btn btn-sm btn-danger" @click="del(i)">Delete</button>
+                  <td class="d-flex">
+                      <button class="btn btn-sm btn-primary" @click="edit(i)">
+                        <i class="fa fa-edit"></i>
+                      </button>
+                      <button class="btn btn-sm btn-danger mx-2" @click="del(i)">
+                        <i class="fa fa-trash"></i>
+                      </button>
+                      <button class="btn btn-sm btn-success" v-if="isDone">
+                        <i class="fa fa-check"></i>
+                      </button>
+                      <button class="btn btn-sm btn-warning">
+                        <i class="fa fa-close"></i>
+                      </button>
                   </td>
                 </tr>
               </tbody>
@@ -92,7 +121,6 @@
         </div>
       </div>
       
-      <div></div>
 
     </div>
   </div>
@@ -115,7 +143,10 @@
         descE: "",
         dataPerson: [],
         tempPerson: [],
-        index: ""
+        index: "",
+        isDone: false,
+        isDeleted: false,
+        isEdited: false
             
       }
     },
@@ -139,20 +170,31 @@
         if(this.isEdit){
           if(this.nameE && this.descE){
             this.dataPerson[this.index] = {name: this.nameE, desc: this.descE};
+            this.setEditStatus(false);
+            this.setisEdited(true);
           }
-
-          this.setEditStatus(false);
         }
         else{
           if(this.name && this.desc){
-            this.dataPerson.push({...this.dataPerson, name: this.name, desc: this.desc});
+            this.dataPerson.push({...this.dataPerson, name: this.name, desc: this.desc, date: new Date()});
             this.name = this.desc = "";
+            console.log(this.dataPerson)
           }
         }
       },
 
       setEditStatus(status){
         this.isEdit = status;
+      },
+
+      setisEdited(status){
+        this.isEdited = status;
+        setTimeout(()=>{ this.isEdited = false }, 3000)
+      },
+
+      setisDeleted(status){
+        this.isDeleted = status;
+        setTimeout(()=>{ this.isDeleted = false }, 3000)
       },
 
       getTask(taskIndex){
@@ -170,8 +212,8 @@
 
       del(i){
         this.dataPerson.splice(i, 1);
+        this.setisDeleted(true);
       }
-
     }
   }
 
