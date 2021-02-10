@@ -14,11 +14,11 @@
 
     <!-- using the v-bind or an ordinary colon will make us bind a declared relay with any type of event we want to handle -->
     <!-- <button :disabled="isShow">add new</button> -->
-  <div class="w-100 h-100 position-absolute d-flex align-items-center p-3" style="background: rgba(0,0,0, 0.7); z-index: 1" v-if="isEdit">
+  <div class="w-100 position-fixed d-flex align-items-center p-3" style="background: rgba(0,0,0, 0.7); z-index: 1; height: 100%;" v-if="isEdit">
       
     <div class="container">
       <div class="row">
-        <div class="col-sm-12 col-md-12 col-lg-6 col-xl-6 bg-light w-100 mx-auto p-3 my-auto rounded">
+        <div class="col-sm-12 col-md-12 col-lg-6 col-xl-6 bg-light w-100 mx-auto p-3 my-auto rounded shadow shadow">
           <form @submit.prevent="addData">
               <div class="from-group">
                 <label for="name" class="text-muted">Name</label>
@@ -30,13 +30,31 @@
               </div>
               
               <div class="form-group mt-3 text-center">
-                <button type="submit" class="btn btn-primary shadow-md mt-2">Edit</button>
+                <button type="submit" class="btn btn-success shadow-md mt-2">Edit</button>
               </div>
             </form>
         </div>
       </div>
     </div>
+  </div>
 
+  <div class="w-100 position-fixed d-flex align-items-center p-3" style="background: rgba(0,0,0, 0.7); z-index: 1; height: 100%;" v-if="deleteModal">
+      
+    <div class="container">
+      <div class="row">
+        <div class="col-sm-12 col-md-12 col-lg-6 col-xl-6 bg-light w-100 mx-auto p-3 my-auto rounded">
+          <div class="rounded bg-muted  p-3 text-uppercase text-center shadow-sm">
+              <div class="rounded bg-white shadow-sm p-2 text-muted font-weight-light text-uppercase py-4">
+                <small>are you sure you want to clear your to-do lists?</small>
+              </div>
+          </div>
+          <div class="d-flex justify-content-center mt-3">
+            <button class="btn btn-sm btn-success mx-2" @click="acceptClear(true)">YES</button>
+            <button class="btn btn-sm btn-dark" @click="acceptClear(false)">NO</button>
+          </div>
+        </div>
+      </div>
+    </div>
   </div>
 
   <div class="container-fluid">
@@ -64,10 +82,12 @@
         </form>
         
         <div>
-          <div class="mb-4 position-relative">
-            <div class="rounded bg-white shadow-sm p-2 text-muted text-uppercase">Your tasks' lists</div>
+          <div class="mb-4 mt-5 position-relative">
+            <div class="rounded bg-muted  p-2 text-uppercase text-center">
+              <span class="rounded bg-white shadow-sm p-2 text-muted">Your tasks' lists</span>
+            </div>
             
-            <div class="position-absolute w-30" style="right: 1.5em; top:0" v-if="toastStatus">
+            <div class="position-absolute w-30 p-0" style="right: 0em; top:-1.5em" v-if="toastStatus">
               <div :class="feedbackColor">
                 <small v-text="message"></small>
               </div>
@@ -75,14 +95,14 @@
 
           </div>
           <div class="bg-light text-center mt-3 p-2" v-if="dataPerson.length <= 0">
-            <span class="text-muted bg-white shadow shadow-sm p-2 rounded">Currently, you have no todo items</span>
+            <span class="text-muted bg-white shadow shadow-sm p-2 rounded">Currently, you have no todo items.</span>
           </div>
           <div v-else-if="dataPerson.length > 0" class="table-responsive">
-            <table class="table table-striped table-condensed table-hover text-muted w-100">
-              <thead>
+            <table class="table table-striped table-condensed table-borderless table-hover text-muted w-100">
+              <thead class="table-info">
                 <tr>
                   <th>DelM</th>
-                  <th>To-do</th>
+                  <th>Todo</th>
                   <th>Description</th>
                   <th>Options</th>
                 </tr>
@@ -90,13 +110,13 @@
               <tbody>
                 <tr v-for="(v, i) of dataPerson" :key="i" class="">
                   <td>
-                    <input type="checkbox" @click="controlCheck(v)" checked="enabled && index === i" v-model="enabled" style="cursor: pointer"/>
+                    <input type="checkbox" @click="controlCheck(v, i, $event)" style="cursor: pointer"/>
                   </td>
-                  <td v-bind:style = "(isDone && index === i) ? styleObj : ''"> {{ v.name }} </td>
-                  <td v-bind:style = "(isDone && index === i) ? styleObj : ''"> 
+                  <td v-bind:style = "(isDone && index === i) ? styleObj : ''" class="text-lowercase"> {{ v.name }} </td>
+                  <td v-bind:style = "(isDone && index === i) ? styleObj : ''" class="text-lowercase"> 
                     {{ v.desc }} 
                     <div>
-                      <small class="text-muted">created @{{ formatDate(v.date) }}</small>
+                      <small class="text-info">created @{{ formatDate(v.date) }}</small>
                     </div>
                   </td>
                   <td class="d-flex">
@@ -117,6 +137,17 @@
               </tbody>
             </table>
           </div>
+
+          <div class="text-center mt-3" v-if="dataPerson.length > 0">
+            <button class="btn btn-sm btn-primary" @click="mulDelBtnM()" v-if="mulDelBtn">
+              <i class="fa fa-edit mr-1"></i>
+              <span>Delete multiple {{delMultipleArr.length}}</span> 
+            </button>
+            <button class="btn btn-sm btn-danger mx-2" @click="clearAll()">
+              <i class="fa fa-warning mr-1"></i>Clear All
+            </button>
+          </div>
+
         </div>
       </div>
       
@@ -136,7 +167,7 @@
           textDecoration: 'line-through',
         },
         enabled: false,
-        feedbackColor: 'alert alert-warning',
+        feedbackColor: '',
         isEdit: false,
         count: 0,
         name: "",
@@ -152,6 +183,9 @@
         isEdited: false,
         toastStatus: false,
         message: "",
+        delMultipleArr: [],
+        mulDelBtn: false,
+        deleteModal: false,
       }
     },
     
@@ -169,16 +203,55 @@
 
     methods: {
       
-      controlCheck(){
+      mulDelBtnM(){
         
-        // if(e.target.checked) console.log('yes, i am a checkbox');
-        // console.log();
-        // console.log(v,e)
-        // console.log('this is the check', this.checked);
+        let i = 0;
+        while(i < this.delMultipleArr.length){
+          this.dataPerson.splice(this.delMultipleArr[i], 1);
+          i++;  
+        }
+
+        this.delMultipleArr = [];
+        this.showDelBtn(false);
+      },
+
+      setDeleteModal(status){
+        this.deleteModal = status;
+      },
+      
+      clearAll(){
+        this.setDeleteModal(true);
+      },
+
+      acceptClear(status){
+        if(status === true){
+          this.dataPerson = [];
+          this.setDeleteModal(!status);
+        }else{
+          this.setDeleteModal(status);
+        }
+      },
+
+      showDelBtn(status){
+        this.mulDelBtn = status;
+      },
+
+      controlCheck(v, i, e){
+        
+        this.showDelBtn(true);
+        if(e.target.checked){
+          this.delMultipleArr.push(i);
+        }
+        else{
+          this.delMultipleArr = [...new Set(this.delMultipleArr)];
+          this.delMultipleArr.splice(this.delMultipleArr.indexOf(i), 1);
+          this.delMultipleArr.sort();
+          if(this.delMultipleArr.length <= 0) this.showDelBtn(false);
+        } 
       },
 
       formatDate(_time){
-        return moment(_time).format("ddd, hA");
+        return moment(_time).format("ddd, h:mm:A");
       },
 
       controlDone(_i){
@@ -209,11 +282,10 @@
             this.setToastColor('alert alert-success p-1');
             this.setToastStatus();
           }
-
-        }
-        else{
+        }else{
           if(this.name && this.desc){
             this.dataPerson.push({...this.dataPerson, name: this.name, desc: this.desc, date: new Date()});
+            this.dataPerson.reverse();
             this.name = this.desc = "";
             this.setToastMsg('A new task\'s been added!');
             this.setToastColor('alert alert-success p-1');
@@ -260,7 +332,7 @@
       del(i){
         this.dataPerson.splice(i, 1);
         this.setisDeleted(true);
-        this.setToastMsg('A new task\'s been added!');
+        this.setToastMsg('A task\'s been deleted!');
         this.setToastColor('alert alert-danger p-1');
         this.setToastStatus();
       }
