@@ -67,15 +67,9 @@
           <div class="mb-4 position-relative">
             <div class="rounded bg-white shadow-sm p-2 text-muted text-uppercase">Your tasks' lists</div>
             
-            <div class="position-absolute w-30" style="right: 1.5em; top:0" v-if="isEdited">
-              <div class="alert alert-success p-1">
-                <small>Successfully Edited!</small>
-              </div>
-            </div>
-
-            <div class="position-absolute w-30" style="right: 1.5em; top:0" v-if="isDeleted">
-              <div class="alert alert-success p-1">
-                <small>Successfully Deleted!</small>
+            <div class="position-absolute w-30" style="right: 1.5em; top:0" v-if="toastStatus">
+              <div :class="feedbackColor">
+                <small v-text="message"></small>
               </div>
             </div>
 
@@ -87,19 +81,24 @@
             <table class="table table-striped table-condensed table-hover text-muted w-100">
               <thead>
                 <tr>
-                  <th>mDel</th>
+                  <th>DelM</th>
                   <th>To-do</th>
-                  <th>Desc</th>
+                  <th>Description</th>
                   <th>Options</th>
                 </tr>
               </thead>
               <tbody>
                 <tr v-for="(v, i) of dataPerson" :key="i" class="">
                   <td>
-                    <input type="checkbox" style="cursor: pointer"/>
+                    <input type="checkbox" @click="controlCheck(v)" checked="enabled && index === i" v-model="enabled" style="cursor: pointer"/>
                   </td>
-                  <td> {{ v.name }} </td>
-                  <td> {{ v.desc }} </td>
+                  <td v-bind:style = "(isDone && index === i) ? styleObj : ''"> {{ v.name }} </td>
+                  <td v-bind:style = "(isDone && index === i) ? styleObj : ''"> 
+                    {{ v.desc }} 
+                    <div>
+                      <small class="text-muted">created @{{ formatDate(v.date) }}</small>
+                    </div>
+                  </td>
                   <td class="d-flex">
                       <button class="btn btn-sm btn-primary" @click="edit(i)">
                         <i class="fa fa-edit"></i>
@@ -107,11 +106,11 @@
                       <button class="btn btn-sm btn-danger mx-2" @click="del(i)">
                         <i class="fa fa-trash"></i>
                       </button>
-                      <button class="btn btn-sm btn-success" v-if="isDone">
+                      <button class="btn btn-sm btn-success" v-if="isDone && (index === i)" @click="controlDone(i)">
                         <i class="fa fa-check"></i>
                       </button>
-                      <button class="btn btn-sm btn-warning">
-                        <i class="fa fa-close"></i>
+                      <button class="btn btn-sm btn-warning" v-else @click="controlDone(i)">
+                        <i class="fa fa-close" ></i>
                       </button>
                   </td>
                 </tr>
@@ -127,14 +126,17 @@
 </template>
 
 <script>
+  import moment from 'moment';
+
   export default{
     data(){
       return {
         
-        attribute: "value",
-        // name: "<h1>My name is Peter Maiyaki</h1>",
-        // isShow: false,
-        // isDo: false,
+        styleObj:{
+          textDecoration: 'line-through',
+        },
+        enabled: false,
+        feedbackColor: 'alert alert-warning',
         isEdit: false,
         count: 0,
         name: "",
@@ -145,9 +147,11 @@
         tempPerson: [],
         index: "",
         isDone: false,
+        doneArr: [],
         isDeleted: false,
-        isEdited: false
-            
+        isEdited: false,
+        toastStatus: false,
+        message: "",
       }
     },
     
@@ -164,41 +168,82 @@
     },
 
     methods: {
+      
+      controlCheck(){
+        
+        // if(e.target.checked) console.log('yes, i am a checkbox');
+        // console.log();
+        // console.log(v,e)
+        // console.log('this is the check', this.checked);
+      },
+
+      formatDate(_time){
+        return moment(_time).format("ddd, hA");
+      },
+
+      controlDone(_i){
+        this.index = _i;
+        
+        if(this.isDone){
+          this.setToastMsg('Task undone!');
+          this.setToastColor('alert alert-warning p-1');
+          this.setToastStatus();
+          this.isDone = false;
+          this.doneArr = [...new Set(this.doneArr)].splice(this.doneArr.indexOf(_i), 1);
+
+        }else{
+          this.setToastMsg('Task completed!');
+          this.setToastColor('alert alert-success p-1');
+          this.setToastStatus();
+          this.isDone = true;
+          this.doneArr.push(_i);
+        }
+      },
 
       addData(){
-        
         if(this.isEdit){
           if(this.nameE && this.descE){
             this.dataPerson[this.index] = {name: this.nameE, desc: this.descE};
             this.setEditStatus(false);
-            this.setisEdited(true);
+            this.setToastMsg('Task\'s been Edited!');
+            this.setToastColor('alert alert-success p-1');
+            this.setToastStatus();
           }
+
         }
         else{
           if(this.name && this.desc){
             this.dataPerson.push({...this.dataPerson, name: this.name, desc: this.desc, date: new Date()});
             this.name = this.desc = "";
-            console.log(this.dataPerson)
+            this.setToastMsg('A new task\'s been added!');
+            this.setToastColor('alert alert-success p-1');
+            this.setToastStatus();
           }
         }
+      },
+
+      setToastStatus(){
+        this.toastStatus = true;
+        setTimeout(()=>{ this.toastStatus = false }, 3000)
       },
 
       setEditStatus(status){
         this.isEdit = status;
       },
 
-      setisEdited(status){
-        this.isEdited = status;
-        setTimeout(()=>{ this.isEdited = false }, 3000)
-      },
-
-      setisDeleted(status){
-        this.isDeleted = status;
+      toastTimeout(){
         setTimeout(()=>{ this.isDeleted = false }, 3000)
       },
 
+      setToastMsg(msg){
+        this.message = msg;
+      },
+
+      setToastColor(color){
+        this.feedbackColor = color;
+      },
+
       getTask(taskIndex){
-        console.log(taskIndex);
         return this.dataPerson.filter((v, i) => i === taskIndex );
       },
 
@@ -209,10 +254,15 @@
         this.descE = desc;
         this.index = i;
       },
-
+      setisDeleted(status){
+        this.isDeleted = status;
+      },
       del(i){
         this.dataPerson.splice(i, 1);
         this.setisDeleted(true);
+        this.setToastMsg('A new task\'s been added!');
+        this.setToastColor('alert alert-danger p-1');
+        this.setToastStatus();
       }
     }
   }
