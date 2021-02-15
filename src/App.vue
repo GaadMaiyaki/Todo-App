@@ -108,12 +108,12 @@
                 </tr>
               </thead>
               <tbody>
-                <tr v-for="(v, i) of dataPerson" :key="i" class="">
+                <tr v-for="(v, i) of dataPerson" :key="v.id" class="">
                   <td>
-                    <input type="checkbox" @click="controlCheck(v, i, $event)" style="cursor: pointer"/>
+                    <input type="checkbox" @click="controlCheck(v.id, $event)" style="cursor: pointer"/>
                   </td>
-                  <td v-bind:style = "(isDone && index === i) ? styleObj : ''" class="text-lowercase"> {{ v.name }} </td>
-                  <td v-bind:style = "(isDone && index === i) ? styleObj : ''" class="text-lowercase"> 
+                  <td v-bind:style = "isDone && v.id === index ? styleObj : ''" class="text-lowercase"> {{ v.name }} </td>
+                  <td v-bind:style = "isDone && v.id === index ? styleObj : ''" class="text-lowercase"> 
                     {{ v.desc }} 
                     <div>
                       <small class="text-info">created @{{ formatDate(v.date) }}</small>
@@ -126,12 +126,22 @@
                       <button class="btn btn-sm btn-danger mx-2" @click="del(i)">
                         <i class="fa fa-trash"></i>
                       </button>
-                      <button class="btn btn-sm btn-success" v-if="isDone && (index === i)" @click="controlDone(i)">
+                      
+                      <button class="btn btn-sm btn-success" v-if="isDone && v.id === index" @click="controlDone(v.id)">
                         <i class="fa fa-check"></i>
                       </button>
-                      <button class="btn btn-sm btn-warning" v-else @click="controlDone(i)">
+                      <button class="btn btn-sm btn-warning" v-if="isDone && v.id !== index" @click="controlDone(v.id)">
+                        <i class="fa fa-close"></i>
+                      </button>
+                      
+                      <button class="btn btn-sm btn-warning" v-if="!isDone && v.id === index" @click="controlDone(v.id)">
                         <i class="fa fa-close" ></i>
                       </button>
+
+                      <button class="btn btn-sm btn-warning" v-if="!isDone && v.id !== index" @click="controlDone(v.id)">
+                        <i class="fa fa-close" ></i>
+                      </button>
+
                   </td>
                 </tr>
               </tbody>
@@ -176,8 +186,10 @@
         descE: "",
         dataPerson: [],
         tempPerson: [],
+        tempMark: [],
         index: "",
         isDone: false,
+        isNotDone: true,
         doneArr: [],
         isDeleted: false,
         isEdited: false,
@@ -186,11 +198,14 @@
         delMultipleArr: [],
         mulDelBtn: false,
         deleteModal: false,
+        id: 1
       }
     },
     
     
     mounted(){
+      
+
       let interval = setInterval(
         ()=>{ 
           if(this.count < 10) this.count++;
@@ -199,20 +214,22 @@
       1000);
 
       return interval;
+
     },
 
+    
     methods: {
-      
+      delTemp(i) {
+        return this.dataPerson.findIndex(v => v.id === i);
+      },
+
       mulDelBtnM(){
-        
-        let i = 0;
-        while(i < this.delMultipleArr.length){
-          this.dataPerson.splice(this.delMultipleArr[i], 1);
-          i++;  
+        for(let i of this.delMultipleArr){
+          this.dataPerson.splice(this.delTemp(i), 1);
         }
 
         this.delMultipleArr = [];
-        this.showDelBtn(false);
+        this.showDelBtn(!true);
       },
 
       setDeleteModal(status){
@@ -236,17 +253,17 @@
         this.mulDelBtn = status;
       },
 
-      controlCheck(v, i, e){
+      controlCheck(id, e){
         
         this.showDelBtn(true);
         if(e.target.checked){
-          this.delMultipleArr.push(i);
+          this.delMultipleArr.push(id);
         }
         else{
-          this.delMultipleArr = [...new Set(this.delMultipleArr)];
-          this.delMultipleArr.splice(this.delMultipleArr.indexOf(i), 1);
-          this.delMultipleArr.sort();
-          if(this.delMultipleArr.length <= 0) this.showDelBtn(false);
+          
+          this.delMultipleArr.splice(this.delMultipleArr.indexOf(id), 1);
+
+          if(this.delMultipleArr.length <= 0) this.showDelBtn(!true);
         } 
       },
 
@@ -254,22 +271,41 @@
         return moment(_time).format("ddd, h:mm:A");
       },
 
-      controlDone(_i){
-        this.index = _i;
-        
-        if(this.isDone){
-          this.setToastMsg('Task undone!');
-          this.setToastColor('alert alert-warning p-1');
-          this.setToastStatus();
-          this.isDone = false;
-          this.doneArr = [...new Set(this.doneArr)].splice(this.doneArr.indexOf(_i), 1);
+      setisDone(status){
+        this.isDone = status;
+      },
+      setisNotDone(status){
+        this.isNotDone = status;
+      },
 
-        }else{
+
+      // markMe(id){
+      //   return this.dataPerson.findIndex(v => v.id === id);
+      // },
+      findMark(id){
+        return this.dataPerson.findIndex(v => v.id === id);
+      },
+
+      loop(){
+        for(let i of this.tempMark){
+          return this.findMark(i);
+        }
+      },
+      
+      controlDone(id){
+        // markMe(id);
+        this.index = id;
+        if(!this.isDone){
+          this.setisDone(true);
           this.setToastMsg('Task completed!');
           this.setToastColor('alert alert-success p-1');
           this.setToastStatus();
-          this.isDone = true;
-          this.doneArr.push(_i);
+
+        }else{
+          this.setisDone(!true);
+          this.setToastMsg('Task undone!');
+          this.setToastColor('alert alert-warning p-1');
+          this.setToastStatus();
         }
       },
 
@@ -284,14 +320,22 @@
           }
         }else{
           if(this.name && this.desc){
-            this.dataPerson.push({...this.dataPerson, name: this.name, desc: this.desc, date: new Date()});
-            this.dataPerson.reverse();
-            this.name = this.desc = "";
-            this.setToastMsg('A new task\'s been added!');
-            this.setToastColor('alert alert-success p-1');
-            this.setToastStatus();
+            if(this.dataPerson.length === 0){ 
+              this.dataPerson.push({...this.dataPerson, id: this.id, name: this.name, desc: this.desc, date: new Date()});
+              this.name = this.desc = "";
+              this.setToastMsg('A new task\'s been added!');
+              this.setToastColor('alert alert-success p-1');
+              this.setToastStatus();
+            }else{
+              this.dataPerson.unshift({...this.dataPerson, id: this.id, name: this.name, desc: this.desc, date: new Date()});
+              this.name = this.desc = "";
+              this.setToastMsg('A new task\'s been added!');
+              this.setToastColor('alert alert-success p-1');
+              this.setToastStatus();
+            }
           }
         }
+        this.id++;
       },
 
       setToastStatus(){
